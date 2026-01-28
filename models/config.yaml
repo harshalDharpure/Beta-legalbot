@@ -1,0 +1,55 @@
+# Common Configuration for POCSO Legal Dialogue Training
+
+# Dataset paths
+data:
+  base_path: "experiments"
+  exp1_train: "exp1_supervised_baseline/data/train.jsonl"
+  exp1_test: "exp1_supervised_baseline/data/test.jsonl"
+  exp2_hindi_train: "exp2_monolingual_baseline/data/hindi_train.jsonl"
+  exp2_hindi_test: "exp2_monolingual_baseline/data/hindi_test.jsonl"
+  exp2_code_mixed_train: "exp2_monolingual_baseline/data/code_mixed_train.jsonl"
+  exp2_code_mixed_test: "exp2_monolingual_baseline/data/code_mixed_test.jsonl"
+  exp2_english_train: "exp2_monolingual_baseline/data/english_train.jsonl"
+  exp2_english_test: "exp2_monolingual_baseline/data/english_test.jsonl"
+  exp3_h_cm_to_en_train: "exp3_zeroshot_transfer/data/hindi_code_mixed_to_english/train.jsonl"
+  exp3_h_cm_to_en_test: "exp3_zeroshot_transfer/data/hindi_code_mixed_to_english/test.jsonl"
+  exp4_few10_h_cm_en_train: "exp4_fewshot_learning/data/few10/hindi_code_mixed_to_english/train.jsonl"
+  exp4_few10_h_cm_en_test: "exp4_fewshot_learning/data/few10/hindi_code_mixed_to_english/test.jsonl"
+
+# Training parameters
+training:
+  batch_size: 8
+  gradient_accumulation_steps: 4
+  learning_rate: 5e-5
+  num_epochs: 10
+  warmup_steps: 500
+  max_length: 512
+  max_target_length: 256
+  save_steps: 500
+  eval_steps: 500
+  logging_steps: 100
+  save_total_limit: 3
+  fp16: true
+  dataloader_num_workers: 4
+  seed: 42
+
+# Evaluation parameters
+evaluation:
+  metrics:
+    - "bleu"
+    - "rouge"
+    - "meteor"
+    - "bertscore"
+  num_beams: 4
+  length_penalty: 0.6
+
+# Model paths (will be overridden per model)
+model:
+  model_name: ""  # Set per model
+  tokenizer_name: ""  # Set per model
+
+# Output paths
+output:
+  base_dir: "models"
+  checkpoint_dir: "checkpoints"
+  log_dir: "logs"

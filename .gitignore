@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Model checkpoints (too large for git)
+models/*/checkpoints/
+models/*/logs/
+*.safetensors
+*.bin
+*.pt
+*.pth
+
+# Data files (if too large)
+*.jsonl
+!experiments/**/*.jsonl
+
+# Evaluation results (can be regenerated)
+models/evaluation_results/*.json
+models/evaluation_results/*.csv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Temporary files
+*.tmp
+*.log

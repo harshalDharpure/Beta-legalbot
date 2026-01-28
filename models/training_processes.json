@@ -1,0 +1,33 @@
+{
+  "started_at": "2026-01-29T00:41:31.994572",
+  "processes": [
+    {
+      "model": "mt5_large",
+      "name": "mT5-Large",
+      "pid": 453217,
+      "gpu": 0,
+      "log_file": "/DATA/vaneet_2221cs15/legal-bot/models/mt5_large/logs/training_gpu0.log"
+    },
+    {
+      "model": "xlmr_large",
+      "name": "XLM-RoBERTa-Large",
+      "pid": 453218,
+      "gpu": 1,
+      "log_file": "/DATA/vaneet_2221cs15/legal-bot/models/xlmr_large/logs/training_gpu1.log"
+    },
+    {
+      "model": "muril_large",
+      "name": "MuRIL-Large",
+      "pid": 453219,
+      "gpu": 2,
+      "log_file": "/DATA/vaneet_2221cs15/legal-bot/models/muril_large/logs/training_gpu2.log"
+    },
+    {
+      "model": "flan_t5_xl",
+      "name": "FLAN-T5-XL",
+      "pid": 453220,
+      "gpu": 3,
+      "log_file": "/DATA/vaneet_2221cs15/legal-bot/models/flan_t5_xl/logs/training_gpu3.log"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+================================================================================
+TRAINING STATUS - FINAL SUMMARY
+================================================================================
+
+✅ COMPLETED MODELS:
+  1. MuRIL-Large        → GPU 2 ✅ COMPLETED
+  2. XLM-RoBERTa-Large  → GPU 1 ✅ COMPLETED
+
+🔄 TRAINING IN PROGRESS:
+  3. mT5-Large          → GPU 0 (restarted with batch_size=1)
+  4. FLAN-T5-XL         → GPU 3 (restarted with batch_size=1)
+
+================================================================================
+GPU ALLOCATION:
+================================================================================
+GPU 0: mT5-Large (batch_size=1, gradient_accumulation=16)
+GPU 1: XLM-RoBERTa-Large ✅ COMPLETED
+GPU 2: MuRIL-Large ✅ COMPLETED  
+GPU 3: FLAN-T5-XL (batch_size=1, gradient_accumulation=32)
+GPU 4: Available
+
+================================================================================
+MONITORING COMMANDS:
+================================================================================
+Check status:     python3 models/check_status.py
+View logs:        tail -f models/{model}/logs/training_gpu*.log
+GPU usage:        watch -n 1 nvidia-smi
+All processes:    ps aux | grep train.py
+
+================================================================================
+NOTES:
+================================================================================
+- Batch sizes reduced to 1 for large models to avoid OOM
+- Gradient accumulation increased to maintain effective batch size
+- Training continues in background
+- Checkpoints saved in: models/{model}/checkpoints/
+- Logs saved in: models/{model}/logs/
+
+================================================================================

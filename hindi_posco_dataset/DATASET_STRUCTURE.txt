@@ -1,0 +1,56 @@
+================================================================================
+HINDI POCSO DATASET - RESEARCH STRUCTURE
+================================================================================
+
+Directory Structure:
+--------------------
+hindi_posco_dataset/
+├── README.md                    # Complete documentation
+├── statistics.json              # Dataset statistics
+├── load_dataset.py              # Python helper script for loading data
+├── layman/                      # Layman complexity level (133 entries)
+│   ├── bucket_A.jsonl          # 33 entries (2-3 turns)
+│   ├── bucket_B.jsonl          # 33 entries (3-4 turns)
+│   ├── bucket_C.jsonl          # 34 entries (4-5 turns)
+│   └── bucket_D.jsonl          # 33 entries (5-6 turns)
+├── intermediate/                # Intermediate complexity level (133 entries)
+│   ├── bucket_A.jsonl          # 34 entries (2-3 turns)
+│   ├── bucket_B.jsonl          # 33 entries (3-4 turns)
+│   ├── bucket_C.jsonl          # 33 entries (4-5 turns)
+│   └── bucket_D.jsonl          # 33 entries (5-6 turns)
+└── professional/                # Professional complexity level (134 entries)
+    ├── bucket_A.jsonl          # 33 entries (2-3 turns)
+    ├── bucket_B.jsonl          # 34 entries (3-4 turns)
+    ├── bucket_C.jsonl          # 34 entries (4-5 turns)
+    └── bucket_D.jsonl          # 33 entries (5-6 turns)
+
+Total: 400 entries
+
+Quick Start:
+-----------
+# Load all data
+from load_dataset import load_all_data
+data = load_all_data()
+
+# Load by complexity
+from load_dataset import load_by_complexity
+layman_data = load_by_complexity('layman')
+
+# Load specific file
+from load_dataset import load_data
+data = load_data(complexity='layman', bucket='A')
+
+File Format:
+-----------
+Each .jsonl file contains one JSON object per line with:
+- dialogue_id: Unique identifier
+- language: "hindi"
+- complexity: "layman" | "intermediate" | "professional"
+- turn_count: Number of dialogue turns
+- turns: List of user/assistant messages
+- statutes_cited: List of legal statutes referenced
+- bucket: "A" | "B" | "C" | "D"
+- case_id: Case identifier
+
+For detailed information, see README.md
+

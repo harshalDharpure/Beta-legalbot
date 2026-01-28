@@ -1,0 +1,76 @@
+================================================================================
+POCSO DATASETS - COMPLETE RESEARCH STRUCTURE
+================================================================================
+
+This directory contains three multilingual POCSO (Protection of Children from 
+Sexual Offences) Act datasets, each organized by complexity level and turn count buckets.
+
+DATASETS:
+---------
+1. hindi_posco_dataset/          - Hindi language dataset (400 entries)
+2. code_mixed_posco_dataset/      - Code-mixed Hindi-English dataset (400 entries)
+3. english_posco_dataset/         - English language dataset (400 entries)
+
+Total: 1,200 entries across all three languages
+
+STRUCTURE (same for all datasets):
+----------------------------------
+Each dataset follows this structure:
+
+<dataset_name>/
+├── README.md                    # Complete documentation
+├── statistics.json              # Dataset statistics
+├── load_dataset.py              # Python helper script
+├── layman/                      # Layman complexity (133 entries)
+│   ├── bucket_A.jsonl          # 2-3 turns
+│   ├── bucket_B.jsonl          # 3-4 turns
+│   ├── bucket_C.jsonl          # 4-5 turns
+│   └── bucket_D.jsonl          # 5-6 turns
+├── intermediate/                # Intermediate complexity (133 entries)
+│   ├── bucket_A.jsonl
+│   ├── bucket_B.jsonl
+│   ├── bucket_C.jsonl
+│   └── bucket_D.jsonl
+└── professional/                # Professional complexity (134 entries)
+    ├── bucket_A.jsonl
+    ├── bucket_B.jsonl
+    ├── bucket_C.jsonl
+    └── bucket_D.jsonl
+
+QUICK START:
+-----------
+# Load Hindi dataset
+from hindi_posco_dataset.load_dataset import load_all_data
+hindi_data = load_all_data()
+
+# Load Code Mixed dataset
+from code_mixed_posco_dataset.load_dataset import load_all_data
+code_mixed_data = load_all_data()
+
+# Load English dataset
+from english_posco_dataset.load_dataset import load_all_data
+english_data = load_all_data()
+
+# Load by complexity
+from hindi_posco_dataset.load_dataset import load_by_complexity
+hindi_layman = load_by_complexity('layman')
+
+# Load specific file
+from hindi_posco_dataset.load_dataset import load_data
+data = load_data(complexity='layman', bucket='A')
+
+DATA FORMAT:
+-----------
+Each .jsonl file contains one JSON object per line:
+{
+  "dialogue_id": "HN_A_C0001_001",
+  "language": "hindi|code_mixed|english",
+  "complexity": "layman|intermediate|professional",
+  "turn_count": 3,
+  "turns": [{"role": "user|assistant", "text": "..."}],
+  "statutes_cited": ["POCSO Act Section 3", ...],
+  "bucket": "A|B|C|D",
+  "case_id": 1
+}
+
+For detailed information, see README.md in each dataset directory.

@@ -1,0 +1,18 @@
+{
+  "report_generated": "2026-01-29T00:57:01.154983",
+  "completed_models": {
+    "muril_large": {
+      "global_step": 40,
+      "epoch": 10.0,
+      "total_training_steps": 0,
+      "last_log_entry": null
+    },
+    "xlmr_large": {
+      "global_step": 40,
+      "epoch": 10.0,
+      "total_training_steps": 0,
+      "last_log_entry": null
+    }
+  },
+  "failed_models": {}
+}

@@ -1,0 +1,34 @@
+================================================================================
+TRAINING STATUS SUMMARY
+================================================================================
+
+✅ ALL MODELS TRAINING IN BACKGROUND!
+
+Models Running:
+--------------
+1. mT5-Large          → GPU 0 ✅ RUNNING
+2. XLM-RoBERTa-Large  → GPU 1 ✅ RUNNING  
+3. MuRIL-Large        → GPU 2 ✅ RUNNING
+4. FLAN-T5-XL         → GPU 3 ✅ RUNNING
+
+GPU Status:
+-----------
+- 5x NVIDIA A100-PCIE-40GB (40GB each)
+- Models distributed across GPUs 0-3
+- GPU 4 available for additional tasks
+
+Monitoring:
+-----------
+Check status:     python3 models/check_status.py
+View logs:        tail -f models/{model}/logs/training_gpu*.log
+GPU usage:        watch -n 1 nvidia-smi
+All processes:    ps aux | grep train.py
+
+Process Info:
+-------------
+Saved in: models/training_processes.json
+
+Training will continue in background until completion.
+Use 'pkill -f train.py' to stop all training.
+
+================================================================================

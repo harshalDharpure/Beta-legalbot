@@ -1,0 +1,48 @@
+{
+  "experiment": "POCSO Legal Dialogue Training",
+  "timestamp": "2026-01-29T01:03:06.614994",
+  "summary": {
+    "total_models": 2,
+    "completed": 2,
+    "removed": 2,
+    "success_rate": "100%"
+  },
+  "completed_models": {
+    "muril_large": {
+      "name": "MuRIL-Large",
+      "status": "completed",
+      "gpu": 2,
+      "checkpoints": [
+        "checkpoint-40",
+        "final"
+      ],
+      "checkpoint_path": "models/muril_large/checkpoints/final",
+      "epochs": 10,
+      "steps": 40
+    },
+    "xlmr_large": {
+      "name": "XLM-RoBERTa-Large",
+      "status": "completed",
+      "gpu": 1,
+      "checkpoints": [
+        "checkpoint-40",
+        "final"
+      ],
+      "checkpoint_path": "models/xlmr_large/checkpoints/final",
+      "epochs": 10,
+      "steps": 40
+    }
+  },
+  "removed_models": {
+    "mt5_large": {
+      "name": "mT5-Large",
+      "reason": "OOM - Model too large for 40GB GPU",
+      "status": "removed"
+    },
+    "flan_t5_xl": {
+      "name": "FLAN-T5-XL",
+      "reason": "OOM - XL model too large for 40GB GPU",
+      "status": "removed"
+    }
+  }
+}

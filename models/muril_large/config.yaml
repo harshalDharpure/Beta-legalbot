@@ -1,0 +1,35 @@
+# MuRIL-Large Configuration (Code-mixed specific)
+
+data:
+  exp1_train: "exp1_supervised_baseline/data/train.jsonl"
+  exp1_test: "exp1_supervised_baseline/data/test.jsonl"
+
+model:
+  model_name: "google/muril-large-cased"
+  tokenizer_name: "google/muril-large-cased"
+  model_type: "encoder"
+
+training:
+  batch_size: 8
+  gradient_accumulation_steps: 4
+  learning_rate: 5e-5
+  num_epochs: 10
+  warmup_steps: 500
+  max_length: 512
+  save_steps: 500
+  eval_steps: 500
+  logging_steps: 100
+  save_total_limit: 3
+  fp16: true
+  dataloader_num_workers: 4
+  seed: 42
+
+evaluation:
+  metrics:
+    - "accuracy"
+    - "f1"
+    - "bertscore"
+
+output:
+  checkpoint_dir: "models/muril_large/checkpoints"
+  log_dir: "models/muril_large/logs"
