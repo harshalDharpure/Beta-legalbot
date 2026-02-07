@@ -1,0 +1,21 @@
+{
+  "model": "phi3_mini",
+  "experiment": "exp1",
+  "test_samples": 968,
+  "metrics": {
+    "bleu_1": 0.1855418769375193,
+    "bleu_2": 0.08527572673750368,
+    "bleu_3": 0.043577381517168515,
+    "bleu_4": 0.023218007236974193,
+    "rouge_1_f1": 0.278187100644179,
+    "rouge_2_f1": 0.08206968925164845,
+    "rouge_l_f1": 0.171088517903078,
+    "meteor": 0.1851553881760279,
+    "bertscore_f1": 0.0,
+    "avg_reference_length": 89.91528925619835,
+    "avg_candidate_length": 115.91012396694215,
+    "length_ratio": 1.2891036099175073,
+    "length_difference": 25.994834710743802
+  },
+  "checkpoint": "models/phi3_mini/checkpoints/exp1/final"
+}

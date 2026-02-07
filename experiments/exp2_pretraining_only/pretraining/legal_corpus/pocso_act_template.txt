@@ -1,0 +1,20 @@
+# POCSO Act (Protection of Children from Sexual Offences Act, 2012)
+
+## Instructions:
+1. Copy the full text of the POCSO Act into this file
+2. Include all sections, subsections, and provisions
+3. Format: Plain text, one section per paragraph
+4. Include definitions, penalties, procedures, etc.
+
+## Example Format:
+Section 1: Short title, extent and commencement
+(1) This Act may be called the Protection of Children from Sexual Offences Act, 2012.
+(2) It extends to the whole of India.
+...
+
+Section 2: Definitions
+In this Act, unless the context otherwise requires,—
+(a) "child" means any person below the age of eighteen years;
+...
+
+[Add all sections here]

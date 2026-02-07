@@ -1,0 +1,49 @@
+{
+  "model": "phi3_mini",
+  "experiment": "exp2",
+  "test_samples": 968,
+  "metrics": {
+    "bleu_1": 0.09246976532856689,
+    "bleu_2": 0.03165595128241064,
+    "bleu_3": 0.013604788000870638,
+    "bleu_4": 0.007254193197027895,
+    "rouge_1_f1": 0.13968244159299947,
+    "rouge_2_f1": 0.02654702973868062,
+    "rouge_l_f1": 0.0841165607868151,
+    "meteor": 0.10417615154989722,
+    "bertscore_f1": 0.0,
+    "avg_reference_length": 89.91528925619835,
+    "avg_candidate_length": 132.01136363636363,
+    "length_ratio": 1.4681748201934786,
+    "length_difference": 42.09607438016528
+  },
+  "metrics_by_language": {
+    "english": {
+      "rouge_1_f1": 0.26606242170676275,
+      "n": 331
+    },
+    "hindi": {
+      "rouge_1_f1": 0.04620000353117404,
+      "n": 311
+    },
+    "code_mixed": {
+      "rouge_1_f1": 0.10054521711315915,
+      "n": 326
+    }
+  },
+  "metrics_by_complexity": {
+    "professional": {
+      "rouge_1_f1": 0.18094670892910894,
+      "n": 318
+    },
+    "intermediate": {
+      "rouge_1_f1": 0.1307614797788378,
+      "n": 326
+    },
+    "layman": {
+      "rouge_1_f1": 0.10815835683538805,
+      "n": 324
+    }
+  },
+  "checkpoint": "models/phi3_mini/checkpoints/exp2/pretrained/final"
+}

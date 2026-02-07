@@ -1,0 +1,21 @@
+{
+  "model": "qwen2.5_1.5b",
+  "experiment": "exp1",
+  "test_samples": 968,
+  "metrics": {
+    "bleu_1": 0.0,
+    "bleu_2": 0.0,
+    "bleu_3": 0.0,
+    "bleu_4": 0.0,
+    "rouge_1_f1": 0.0,
+    "rouge_2_f1": 0.0,
+    "rouge_l_f1": 0.0,
+    "meteor": 0.0,
+    "bertscore_f1": 0.0,
+    "avg_reference_length": 89.91528925619835,
+    "avg_candidate_length": 1.0,
+    "length_ratio": 0.011121579080401664,
+    "length_difference": -88.91528925619835
+  },
+  "checkpoint": "models/qwen2.5_1.5b/checkpoints/exp1/final"
+}

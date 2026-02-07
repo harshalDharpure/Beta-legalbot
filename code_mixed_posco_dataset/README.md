@@ -104,6 +104,16 @@ data = load_data(complexity='layman', bucket='A')
 - **Domain**: Legal (POCSO Act)
 - **Format**: JSONL (JSON Lines)
 
+## all_cases.txt (Legal corpus for Exp2 pretraining)
+
+The file **all_cases.txt** contains raw legal judgment text (court cases, IPC, POCSO, etc.) with `[case N]` section markers. It is **suitable for Exp2/Exp3 pretraining** as a legal domain corpus (continued pretraining on raw text). To use it:
+
+```bash
+python data/prepare_legal_corpus.py --use-all-cases
+```
+
+This copies `all_cases.txt` into `experiments/exp2_pretraining_only/pretraining/legal_corpus/` and the Exp3 corpus directory. Exp1 fine-tuning uses the dialogue splits (train_70/val_10/test_20.jsonl), not this file.
+
 ## Notes
 
 - All dialogues are in code-mixed Hindi-English

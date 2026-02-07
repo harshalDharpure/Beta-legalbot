@@ -1,0 +1,30 @@
+# Sample Legal Corpus for POCSO Pretraining
+
+## Instructions:
+This is a sample file. Replace this with actual legal corpus data.
+
+## Recommended Content:
+1. **POCSO Act Full Text** - All sections and provisions
+2. **Case Summaries** - Summaries of landmark POCSO cases
+3. **Legal Procedures** - Investigation, trial, and appeal procedures
+4. **Definitions** - Legal terms and definitions
+5. **Penalties** - Punishments and sentencing guidelines
+
+## Format:
+- Plain text
+- One paragraph per section/concept
+- Clear section markers (e.g., "Section 1:", "Case: XYZ v. ABC")
+- Minimum 50,000+ words recommended for effective pretraining
+
+## Sources to Consider:
+- https://www.indiacode.nic.in (Official legal database)
+- Supreme Court judgments
+- High Court judgments
+- Legal textbooks on POCSO
+- Government guidelines
+
+## Example Entry:
+Section 4: Penetrative sexual assault
+Whoever commits penetrative sexual assault shall be punished with imprisonment of either description for a term which shall not be less than seven years but which may extend to imprisonment for life, and shall also be liable to fine.
+
+[Continue with all sections and related content...]

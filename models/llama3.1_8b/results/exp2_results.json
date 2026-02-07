@@ -1,0 +1,49 @@
+{
+  "model": "llama3.1_8b",
+  "experiment": "exp2",
+  "test_samples": 968,
+  "metrics": {
+    "bleu_1": 0.15443677197973527,
+    "bleu_2": 0.060707611762711985,
+    "bleu_3": 0.027800056367560486,
+    "bleu_4": 0.014137756328613253,
+    "rouge_1_f1": 0.21934090395479264,
+    "rouge_2_f1": 0.05524556219274442,
+    "rouge_l_f1": 0.1586625158004177,
+    "meteor": 0.15085574319762368,
+    "bertscore_f1": 0.0,
+    "avg_reference_length": 89.91528925619835,
+    "avg_candidate_length": 156.4214876033058,
+    "length_ratio": 1.7396539442542338,
+    "length_difference": 66.50619834710744
+  },
+  "metrics_by_language": {
+    "english": {
+      "rouge_1_f1": 0.23856837810436843,
+      "n": 331
+    },
+    "hindi": {
+      "rouge_1_f1": 0.21434333646603304,
+      "n": 311
+    },
+    "code_mixed": {
+      "rouge_1_f1": 0.20458614795937755,
+      "n": 326
+    }
+  },
+  "metrics_by_complexity": {
+    "professional": {
+      "rouge_1_f1": 0.27871063763452025,
+      "n": 318
+    },
+    "intermediate": {
+      "rouge_1_f1": 0.2192646106105704,
+      "n": 326
+    },
+    "layman": {
+      "rouge_1_f1": 0.16114737407844412,
+      "n": 324
+    }
+  },
+  "checkpoint": "models/llama3.1_8b/checkpoints/exp2/pretrained/final"
+}
