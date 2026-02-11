@@ -163,8 +163,10 @@ def setup_model_and_tokenizer_from_exp2(model_name, config, use_qlora=False, gpu
     return model, tokenizer
 
 
-def train_model(model_name, experiment='exp1', gpu_ids=None, use_multi_gpu=True):
+def train_model(model_name, experiment='exp1', gpu_ids=None, use_multi_gpu=True, config=None, few_size=None, direction=None):
     """Train a model for generation task with multi-GPU support."""
+    # Save exp4 config name before we overwrite 'config' with YAML (Exp4 checkpoint dir needs this string)
+    exp4_config_name = config if isinstance(config, str) else None
     model_dir = os.path.join('models', model_name)
     config_path = os.path.join(model_dir, 'config.yaml')
     
@@ -229,9 +231,25 @@ def train_model(model_name, experiment='exp1', gpu_ids=None, use_multi_gpu=True)
     elif experiment == 'exp3':
         train_path = 'experiments/exp3_pretraining_finetuning/finetuning/train.jsonl'
         val_path = 'experiments/exp3_pretraining_finetuning/finetuning/val.jsonl'
+    elif experiment == 'exp4':
+        # Zero-shot transfer: train on source lang(s), test on target (e.g. hindi+cm -> english)
+        exp4_config = exp4_config_name or os.environ.get('EXP4_CONFIG', 'hindi_code_mixed_to_english')
+        train_path = f'experiments/exp4_zeroshot_transfer/data/{exp4_config}/train.jsonl'
+        val_path = f'experiments/exp4_zeroshot_transfer/data/{exp4_config}/val.jsonl'
+        experiment_suffix = exp4_config  # checkpoint dir: exp4_{config}
+    elif experiment == 'exp5':
+        # Few-shot: train on few-shot data, then evaluate
+        exp5_few = few_size if few_size is not None else int(os.environ.get('EXP5_FEW_SIZE', '10'))
+        exp5_dir = direction or os.environ.get('EXP5_DIRECTION', 'hindi_code_mixed_to_english')
+        train_path = f'experiments/exp5_fewshot_learning/data/few{exp5_few}/{exp5_dir}/train.jsonl'
+        val_path = f'experiments/exp5_fewshot_learning/data/few{exp5_few}/{exp5_dir}/val.jsonl'
+        experiment_suffix = f'few{exp5_few}_{exp5_dir}'
     else:
         print(f"❌ Unknown experiment: {experiment}")
         return False
+    
+    if experiment not in ('exp4', 'exp5'):
+        experiment_suffix = ''
     
     print(f"\nLoading data from {train_path}...")
     train_data = load_jsonl(train_path)
@@ -256,7 +274,8 @@ def train_model(model_name, experiment='exp1', gpu_ids=None, use_multi_gpu=True)
     )
     
     # Training arguments
-    output_dir = os.path.join(model_dir, 'checkpoints', experiment)
+    out_exp = f"{experiment}_{experiment_suffix}" if experiment in ('exp4', 'exp5') else experiment
+    output_dir = os.path.join(model_dir, 'checkpoints', out_exp)
     os.makedirs(output_dir, exist_ok=True)
     
     # Adjust batch size for multi-GPU and for Exp3 / full fine-tuning (memory-heavy)
@@ -280,9 +299,26 @@ def train_model(model_name, experiment='exp1', gpu_ids=None, use_multi_gpu=True)
     use_fp16 = config['training'].get('fp16', True) and num_gpus == 1
     use_bf16 = config['training'].get('bf16', False)
     
+    # Exp4/Exp5 fast mode: EXP4_EXP5_EPOCHS=2 or EXP4_EXP5_MAX_STEPS=50 for 1-hr run
+    default_epochs = config['training']['num_epochs']
+    max_steps = -1
+    if experiment in ('exp4', 'exp5'):
+        fast_epochs = os.environ.get('EXP4_EXP5_EPOCHS', '')
+        max_steps_env = os.environ.get('EXP4_EXP5_MAX_STEPS', '')
+        if max_steps_env.isdigit():
+            max_steps = int(max_steps_env)
+            num_epochs = 1
+            print(f"Exp4/Exp5 1-hr mode: max_steps={max_steps} (training will stop after {max_steps} steps)")
+        else:
+            num_epochs = int(fast_epochs) if fast_epochs.isdigit() else default_epochs
+            if num_epochs != default_epochs:
+                print(f"Exp4/Exp5 fast mode: using {num_epochs} epochs (default {default_epochs})")
+    else:
+        num_epochs = default_epochs
     training_args = TrainingArguments(
         output_dir=output_dir,
-        num_train_epochs=config['training']['num_epochs'],
+        num_train_epochs=num_epochs,
+        max_steps=max_steps if max_steps > 0 else -1,
         per_device_train_batch_size=per_device_batch,
         per_device_eval_batch_size=per_device_batch,
         gradient_accumulation_steps=config['training']['gradient_accumulation_steps'],
@@ -343,9 +379,13 @@ def train_model(model_name, experiment='exp1', gpu_ids=None, use_multi_gpu=True)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', type=str, required=True, help='Model name (e.g., qwen2.5_1.5b)')
-    parser.add_argument('--experiment', type=str, default='exp1', choices=['exp1', 'exp3'], help='Experiment name')
+    parser.add_argument('--experiment', type=str, default='exp1', choices=['exp1', 'exp3', 'exp4', 'exp5'], help='Experiment name')
+    parser.add_argument('--config', type=str, default=None, help='Exp4: zeroshot config (e.g. hindi_code_mixed_to_english)')
+    parser.add_argument('--few-size', type=int, default=None, dest='few_size', help='Exp5: few-shot size (5, 10, 20, 50)')
+    parser.add_argument('--direction', type=str, default=None, help='Exp5: direction (e.g. hindi_code_mixed_to_english)')
     parser.add_argument('--gpu', type=int, nargs='+', default=None, help='GPU ID(s) - can specify multiple: --gpu 0 1 4')
     parser.add_argument('--multi-gpu', action='store_true', default=True, help='Use multiple GPUs if available')
     
     args = parser.parse_args()
-    train_model(args.model, args.experiment, gpu_ids=args.gpu, use_multi_gpu=args.multi_gpu)
+    train_model(args.model, args.experiment, gpu_ids=args.gpu, use_multi_gpu=args.multi_gpu,
+                config=args.config, few_size=args.few_size, direction=args.direction)

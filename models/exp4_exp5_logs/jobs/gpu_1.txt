@@ -1,0 +1,3 @@
+exp4 qwen2.5_1.5b english_code_mixed_to_hindi
+exp4 qwen2.5_7b hindi_code_mixed_to_english
+exp4 mistral_7b hindi_english_to_code_mixed

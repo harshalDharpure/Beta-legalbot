@@ -1,0 +1,15 @@
+exp4 qwen2.5_1.5b hindi_code_mixed_to_english
+exp4 qwen2.5_1.5b english_code_mixed_to_hindi
+exp4 qwen2.5_1.5b hindi_english_to_code_mixed
+exp4 phi3_mini hindi_code_mixed_to_english
+exp4 phi3_mini english_code_mixed_to_hindi
+exp4 phi3_mini hindi_english_to_code_mixed
+exp4 qwen2.5_7b hindi_code_mixed_to_english
+exp4 qwen2.5_7b english_code_mixed_to_hindi
+exp4 qwen2.5_7b hindi_english_to_code_mixed
+exp4 mistral_7b hindi_code_mixed_to_english
+exp4 mistral_7b english_code_mixed_to_hindi
+exp4 mistral_7b hindi_english_to_code_mixed
+exp4 llama3.1_8b hindi_code_mixed_to_english
+exp4 llama3.1_8b english_code_mixed_to_hindi
+exp4 llama3.1_8b hindi_english_to_code_mixed

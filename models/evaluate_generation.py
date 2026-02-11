@@ -8,10 +8,11 @@ import json
 import yaml
 import torch
 import argparse
+import signal
+import sys
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 from tqdm import tqdm
-import sys
 
 # Add evaluation directory to path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -94,19 +95,29 @@ def generate_response(model, tokenizer, input_text, max_new_tokens=256):
     return generated_text.strip()
 
 
-def evaluate_model(model_name, experiment='exp1', test_path=None):
+def evaluate_model(model_name, experiment='exp1', test_path=None, config=None, few_size=None, direction=None):
     """Evaluate a model on test set."""
     print(f"\n{'='*70}")
     print(f"Evaluating {model_name} on {experiment}")
     print(f"{'='*70}")
     
-    # Determine checkpoint path
+    # Determine checkpoint path and optional suffix for exp4/exp5
+    exp_suffix = ''
     if experiment == 'exp1':
         checkpoint_path = os.path.join('models', model_name, 'checkpoints', 'exp1', 'final')
     elif experiment == 'exp2':
         checkpoint_path = os.path.join('models', model_name, 'checkpoints', 'exp2', 'pretrained', 'final')
     elif experiment == 'exp3':
         checkpoint_path = os.path.join('models', model_name, 'checkpoints', 'exp3', 'final')
+    elif experiment == 'exp4':
+        exp4_config = config or 'hindi_code_mixed_to_english'
+        exp_suffix = f'_{exp4_config}'
+        checkpoint_path = os.path.join('models', model_name, 'checkpoints', f'exp4_{exp4_config}', 'final')
+    elif experiment == 'exp5':
+        exp5_few = few_size if few_size is not None else 10
+        exp5_dir = direction or 'hindi_code_mixed_to_english'
+        exp_suffix = f'_few{exp5_few}_{exp5_dir}'
+        checkpoint_path = os.path.join('models', model_name, 'checkpoints', f'exp5_few{exp5_few}_{exp5_dir}', 'final')
     else:
         checkpoint_path = os.path.join('models', model_name, 'checkpoints', experiment, 'final')
     
@@ -116,8 +127,8 @@ def evaluate_model(model_name, experiment='exp1', test_path=None):
     
     # Load model
     config_path = os.path.join('models', model_name, 'config.yaml')
-    config = load_config(config_path)
-    use_qlora = config['model'].get('use_qlora', False)
+    config_loaded = load_config(config_path)
+    use_qlora = config_loaded['model'].get('use_qlora', False)
     
     model, tokenizer = load_model_and_tokenizer(model_name, checkpoint_path, use_qlora)
     
@@ -129,26 +140,57 @@ def evaluate_model(model_name, experiment='exp1', test_path=None):
             test_path = 'experiments/exp2_pretraining_only/evaluation/test.jsonl'
         elif experiment == 'exp3':
             test_path = 'experiments/exp3_pretraining_finetuning/finetuning/test.jsonl'
+        elif experiment == 'exp4':
+            exp4_config = config or 'hindi_code_mixed_to_english'
+            test_path = f'experiments/exp4_zeroshot_transfer/data/{exp4_config}/test.jsonl'
+        elif experiment == 'exp5':
+            exp5_few = few_size if few_size is not None else 10
+            exp5_dir = direction or 'hindi_code_mixed_to_english'
+            test_path = f'experiments/exp5_fewshot_learning/data/few{exp5_few}/{exp5_dir}/test.jsonl'
         else:
             test_path = f'experiments/{experiment}/data/test.jsonl'
     
     print(f"Loading test data from: {test_path}")
     test_data = load_jsonl(test_path)
+    # 1-hr mode: subsample eval (set EVAL_MAX_SAMPLES=50)
+    eval_max = os.environ.get('EVAL_MAX_SAMPLES', '')
+    if eval_max.isdigit():
+        n = int(eval_max)
+        if len(test_data) > n:
+            test_data = test_data[:n]
+            print(f"EVAL_MAX_SAMPLES={n}: evaluating on first {n} samples only")
     print(f"Test samples: {len(test_data)}")
+    
+    results_dir = os.path.join('models', model_name, 'results')
+    os.makedirs(results_dir, exist_ok=True)
     
     # Generate responses
     references = []
     candidates = []
+    checkpoint_interval = 200  # Save partial results every N samples (for crash recovery)
     
-    print("Generating responses...")
-    for entry in tqdm(test_data, desc="Generating"):
+    print("Generating responses...", flush=True)
+    for idx, entry in enumerate(tqdm(test_data, desc="Generating")):
         input_text = entry.get('input', '')
         reference = entry.get('output', '')
-        
-        candidate = generate_response(model, tokenizer, input_text)
-        
+        try:
+            candidate = generate_response(model, tokenizer, input_text)
+        except Exception as e:
+            print(f"\n[ERROR] Sample {idx + 1}/{len(test_data)}: {e}", flush=True)
+            import traceback
+            traceback.print_exc()
+            raise
         references.append(reference)
         candidates.append(candidate)
+        # Optional: save partial results so a crash doesn't lose everything
+        if checkpoint_interval and (idx + 1) % checkpoint_interval == 0:
+            partial_path = os.path.join(results_dir, f'{experiment}_results_partial_{idx + 1}.json')
+            try:
+                partial_metrics = calculate_batch_metrics(references, candidates, lang='en')
+                with open(partial_path, 'w') as f:
+                    json.dump({'n_done': len(candidates), 'metrics': partial_metrics}, f, indent=2)
+            except Exception:
+                pass  # Don't fail run on checkpoint write
     
     # Calculate metrics
     print("Calculating metrics...")
@@ -202,9 +244,7 @@ def evaluate_model(model_name, experiment='exp1', test_path=None):
         'checkpoint': checkpoint_path
     }
     
-    results_dir = os.path.join('models', model_name, 'results')
-    os.makedirs(results_dir, exist_ok=True)
-    results_path = os.path.join(results_dir, f'{experiment}_results.json')
+    results_path = os.path.join(results_dir, f'{experiment}{exp_suffix}_results.json')
     
     with open(results_path, 'w') as f:
         json.dump(results, f, indent=2)
@@ -219,14 +259,26 @@ def evaluate_model(model_name, experiment='exp1', test_path=None):
 
 
 def main():
+    # Survive terminal close (SIGHUP) so background runs don't die when shell exits
+    try:
+        signal.signal(signal.SIGHUP, signal.SIG_IGN)
+    except (AttributeError, ValueError):
+        pass  # Windows or invalid
+    # Flush stdout so logs show progress immediately
+    sys.stdout.reconfigure(line_buffering=True) if hasattr(sys.stdout, 'reconfigure') else None
+
     parser = argparse.ArgumentParser(description='Evaluate generation models')
     parser.add_argument('--model', type=str, required=True, help='Model name (e.g., llama3.1_8b)')
-    parser.add_argument('--experiment', type=str, default='exp1', help='Experiment name (exp1, exp2, exp3)')
+    parser.add_argument('--experiment', type=str, default='exp1', help='Experiment name (exp1, exp2, exp3, exp4, exp5)')
+    parser.add_argument('--config', type=str, default=None, help='Exp4: zeroshot config (e.g. hindi_code_mixed_to_english)')
+    parser.add_argument('--few-size', type=int, default=None, dest='few_size', help='Exp5: few-shot size (5, 10, 20, 50)')
+    parser.add_argument('--direction', type=str, default=None, help='Exp5: direction (e.g. hindi_code_mixed_to_english)')
     parser.add_argument('--test-path', type=str, default=None, help='Path to test data (optional)')
     
     args = parser.parse_args()
     
-    evaluate_model(args.model, args.experiment, args.test_path)
+    evaluate_model(args.model, args.experiment, args.test_path,
+                   config=args.config, few_size=args.few_size, direction=args.direction)
 
 
 if __name__ == '__main__':

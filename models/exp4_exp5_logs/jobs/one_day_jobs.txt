@@ -1,0 +1,35 @@
+exp4 qwen2.5_1.5b hindi_code_mixed_to_english
+exp4 qwen2.5_1.5b english_code_mixed_to_hindi
+exp4 qwen2.5_1.5b hindi_english_to_code_mixed
+exp5 qwen2.5_1.5b 5 hindi_code_mixed_to_english
+exp5 qwen2.5_1.5b 5 english_code_mixed_to_hindi
+exp5 qwen2.5_1.5b 10 hindi_code_mixed_to_english
+exp5 qwen2.5_1.5b 10 english_code_mixed_to_hindi
+exp4 phi3_mini hindi_code_mixed_to_english
+exp4 phi3_mini english_code_mixed_to_hindi
+exp4 phi3_mini hindi_english_to_code_mixed
+exp5 phi3_mini 5 hindi_code_mixed_to_english
+exp5 phi3_mini 5 english_code_mixed_to_hindi
+exp5 phi3_mini 10 hindi_code_mixed_to_english
+exp5 phi3_mini 10 english_code_mixed_to_hindi
+exp4 qwen2.5_7b hindi_code_mixed_to_english
+exp4 qwen2.5_7b english_code_mixed_to_hindi
+exp4 qwen2.5_7b hindi_english_to_code_mixed
+exp5 qwen2.5_7b 5 hindi_code_mixed_to_english
+exp5 qwen2.5_7b 5 english_code_mixed_to_hindi
+exp5 qwen2.5_7b 10 hindi_code_mixed_to_english
+exp5 qwen2.5_7b 10 english_code_mixed_to_hindi
+exp4 mistral_7b hindi_code_mixed_to_english
+exp4 mistral_7b english_code_mixed_to_hindi
+exp4 mistral_7b hindi_english_to_code_mixed
+exp5 mistral_7b 5 hindi_code_mixed_to_english
+exp5 mistral_7b 5 english_code_mixed_to_hindi
+exp5 mistral_7b 10 hindi_code_mixed_to_english
+exp5 mistral_7b 10 english_code_mixed_to_hindi
+exp4 llama3.1_8b hindi_code_mixed_to_english
+exp4 llama3.1_8b english_code_mixed_to_hindi
+exp4 llama3.1_8b hindi_english_to_code_mixed
+exp5 llama3.1_8b 5 hindi_code_mixed_to_english
+exp5 llama3.1_8b 5 english_code_mixed_to_hindi
+exp5 llama3.1_8b 10 hindi_code_mixed_to_english
+exp5 llama3.1_8b 10 english_code_mixed_to_hindi

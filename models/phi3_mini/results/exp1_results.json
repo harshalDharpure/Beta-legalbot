@@ -17,5 +17,33 @@
     "length_ratio": 1.2891036099175073,
     "length_difference": 25.994834710743802
   },
+  "metrics_by_language": {
+    "english": {
+      "rouge_1_f1": 0.36220310900207875,
+      "n": 331
+    },
+    "hindi": {
+      "rouge_1_f1": 0.14615321398593178,
+      "n": 311
+    },
+    "code_mixed": {
+      "rouge_1_f1": 0.31884121102531426,
+      "n": 326
+    }
+  },
+  "metrics_by_complexity": {
+    "professional": {
+      "rouge_1_f1": 0.31904600324503973,
+      "n": 318
+    },
+    "intermediate": {
+      "rouge_1_f1": 0.27241123404781703,
+      "n": 326
+    },
+    "layman": {
+      "rouge_1_f1": 0.2438963644816491,
+      "n": 324
+    }
+  },
   "checkpoint": "models/phi3_mini/checkpoints/exp1/final"
 }
