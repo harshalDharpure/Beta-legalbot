@@ -1,0 +1,29 @@
+{
+  "model": "xlmr_large",
+  "experiment": "exp1",
+  "test_samples": 252,
+  "metrics": {
+    "accuracy": 0.9920634920634921,
+    "macro_f1": 0.9920623671155209,
+    "macro_precision": 0.9922480620155039,
+    "macro_recall": 0.9920634920634921,
+    "confusion_matrix": [
+      [
+        84,
+        0,
+        0
+      ],
+      [
+        0,
+        82,
+        2
+      ],
+      [
+        0,
+        0,
+        84
+      ]
+    ]
+  },
+  "checkpoint": "/DATA/vaneet_2221cs15/legal-bot/models/xlmr_large/checkpoints/exp1/final"
+}

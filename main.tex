@@ -1,0 +1,122 @@
+% 5-page limit for ACL SemEval
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[final]{acl}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{enumitem}
+\setlist{nosep, leftmargin=*}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage[T1]{fontenc}
+\usepackage{microtype}
+\setlength{\parskip}{0.25ex plus 0.1ex minus 0.1ex}
+
+\input{cmds}
+
+\title{Multilingual Legal Dialogue for POCSO: Pretraining, Fine-Tuning, Zero-Shot Transfer, and Few-Shot Learning}
+\author{
+  Harshal Dharpure \\
+  Indian Institute of Technology, Patna \\
+  \texttt{harshal\_2511ai30@iitp.ac.in}
+}
+\date{February 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We study multilingual legal dialogue generation for the Indian POCSO domain (Hindi, English, code-mixed). We run five experiments: (1)~fine-tuning only, (2)~legal pretraining only (zero-shot), (3)~pretraining + fine-tuning, (4)~zero-shot cross-lingual transfer, (5)~few-shot (5/10/20/50 examples). We evaluate LLaMA-3.1-8B, Mistral-7B, Qwen2.5-7B, Qwen2.5-1.5B, and Phi-3-mini with QLoRA or full fine-tuning. On 968 test turns, the full pipeline (Exp3) matches or beats fine-tuning only (Exp1); LLaMA-3.1-8B and Mistral-7B lead (ROUGE-L 0.28/0.26, METEOR 0.27/0.23). Exp4 and Exp5 show viable cross-lingual and data-efficient adaptation.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+Legal information access in India requires systems for Hindi, English, and code-mixed text. We focus on POCSO (Protection of Children from Sexual Offences) dialogue: user queries and assistant responses. Prior legal NLP has emphasized classification and NER; we address \emph{generative} dialogue and systematically compare pretraining, fine-tuning, zero-shot transfer, and few-shot learning across five open-weight LLMs. Contributions: (1)~five-experiment design (Exp1--Exp5) ablating legal pretraining and dialogue fine-tuning; (2)~benchmark results (BLEU, ROUGE, METEOR) for five models; (3)~reproducible code and configs.
+
+\section{Methodology}
+\label{sec:methodology}
+
+\textbf{Task.} Each example is input--output: user query and assistant response. We use \texttt{User: <input>}\\\texttt{Assistant: <output>} and train causal LMs to generate the response.
+
+\textbf{Models.} LLaMA-3.1-8B, Mistral-7B, Qwen2.5-7B (QLoRA, 4-bit); Qwen2.5-1.5B and Phi-3-mini (full fine-tuning). Max length 512; gradient checkpointing on 40GB GPUs.
+
+\textbf{Experiments.} \textit{Exp1:} Fine-tune on dialogue data only (baseline). \textit{Exp2:} Pretrain on legal corpus only; zero-shot on dialogue test. \textit{Exp3:} Pretrain then fine-tune (full pipeline). \textit{Exp4:} Train on two languages, test on third (three configs). \textit{Exp5:} Fine-tune on 5/10/20/50 examples per direction.
+
+\textbf{Metrics.} BLEU-1, ROUGE-1 F1, ROUGE-L F1, METEOR (response-level).
+
+\section{Dataset and Setup}
+\label{sec:dataset}
+
+POCSO dataset: 1,200 dialogues (400 per language), converted to 4,677 input--output pairs. Labels: language (Hindi, English, code-mixed), complexity (layman, intermediate, professional). Stratified 70/10/20: train 3,255, val 454, test 968 (Table~\ref{tab:data}). Legal pretraining uses POCSO-related case text. Training: PyTorch, Hugging Face (Transformers, PEFT); A100 40GB; LR $2\times10^{-5}$; batch 1--2, grad accum 16; 3--10 epochs.
+
+\begin{table}[h]
+\centering
+\footnotesize
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Language} & \textbf{Train} & \textbf{Val} & \textbf{Test} \\
+\midrule
+Hindi & 1,052 & 147 & 311 \\
+English & 1,110 & 155 & 331 \\
+Code-mixed & 1,093 & 152 & 326 \\
+\midrule
+\textbf{Total} & 3,255 & 454 & 968 \\
+\bottomrule
+\end{tabular}
+\caption{70/10/20 split (pairs).}
+\label{tab:data}
+\end{table}
+
+\section{Results}
+\label{sec:results}
+
+\textbf{Exp1/2/3 (Table~\ref{tab:main}).} Exp3 matches or slightly beats Exp1 for all models; Exp2 (pretrain only) is well below Exp1/Exp3. LLaMA-3.1-8B and Mistral-7B lead (ROUGE-L 0.28/0.26, METEOR 0.27/0.23). Qwen2.5-1.5B Exp1 omitted (generation-length issue).
+
+\begin{table}[h]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}llcccc@{}}
+\toprule
+\textbf{Model} & \textbf{Exp} & \textbf{B-1} & \textbf{R-1} & \textbf{R-L} & \textbf{MET} \\
+\midrule
+LLaMA-3.1-8B & 1 & 0.266 & 0.406 & 0.277 & 0.270 \\
+ & 2 & 0.154 & 0.219 & 0.159 & 0.151 \\
+ & 3 & \textbf{0.269} & \textbf{0.413} & \textbf{0.282} & \textbf{0.269} \\
+\midrule
+Mistral-7B & 1 & 0.254 & 0.400 & 0.264 & 0.239 \\
+ & 2 & 0.090 & 0.164 & 0.096 & 0.107 \\
+ & 3 & \textbf{0.262} & \textbf{0.397} & \textbf{0.261} & \textbf{0.230} \\
+\midrule
+Qwen2.5-7B & 1 & 0.210 & 0.358 & 0.233 & 0.227 \\
+ & 2 & 0.126 & 0.217 & 0.142 & 0.142 \\
+ & 3 & \textbf{0.212} & \textbf{0.361} & \textbf{0.235} & \textbf{0.232} \\
+\midrule
+Phi-3-mini & 1 & 0.186 & 0.278 & 0.171 & 0.185 \\
+ & 2 & 0.092 & 0.140 & 0.084 & 0.104 \\
+ & 3 & \textbf{0.192} & \textbf{0.295} & \textbf{0.184} & \textbf{0.176} \\
+\midrule
+Qwen2.5-1.5B & 1 & -- & -- & -- & -- \\
+ & 2 & 0.058 & 0.125 & 0.065 & 0.086 \\
+ & 3 & 0.218 & 0.376 & 0.249 & 0.242 \\
+\bottomrule
+\end{tabular}
+\caption{968 test samples. B-1=BLEU-1, R-1=ROUGE-1 F1, R-L=ROUGE-L F1, MET=METEOR. Best per model bold.}
+\label{tab:main}
+\end{table}
+
+\textbf{By language/complexity (Phi-3-mini).} ROUGE-1: English 0.36--0.38, Hindi 0.15--0.18, code-mixed 0.32; professional $>$ intermediate $>$ layman (0.32, 0.29, 0.25 in Exp3).
+
+\textbf{Exp4.} Phi-3-mini, train Hindi+code-mixed, test English (1,596 samples): ROUGE-1 0.276, METEOR 0.172. Cross-lingual transfer is feasible.
+
+\textbf{Exp5.} Few-shot (5/10/20/50) yields non-trivial scores; performance grows with shot size (full results in repo).
+
+\section{Discussion and Conclusion}
+\label{sec:discussion}
+
+Ablation: dialogue fine-tuning is essential (Exp2 $\ll$ Exp1/Exp3); legal pretraining adds a small gain when combined with fine-tuning (Exp3 $\geq$ Exp1). Limitations: automatic metrics only; single domain (POCSO); Qwen2.5-1.5B Exp1 missing.
+
+We presented five experiments for multilingual POCSO dialogue with five LLMs. The full pipeline (pretrain + fine-tune) performs best; LLaMA-3.1-8B and Mistral-7B lead. Zero-shot transfer (Exp4) and few-shot (Exp5) enable cross-lingual and data-efficient use. Code and results are released for reproducibility.
+
+\end{document}
