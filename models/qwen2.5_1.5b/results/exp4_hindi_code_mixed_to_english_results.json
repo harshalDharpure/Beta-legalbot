@@ -1,0 +1,41 @@
+{
+  "model": "qwen2.5_1.5b",
+  "experiment": "exp4",
+  "test_samples": 1596,
+  "metrics": {
+    "bleu_1": 0.07914599703052888,
+    "bleu_2": 0.027938420133819187,
+    "bleu_3": 0.012785688431070363,
+    "bleu_4": 0.0066859931910098576,
+    "rouge_1_f1": 0.17333638640514218,
+    "rouge_2_f1": 0.031504787456952434,
+    "rouge_l_f1": 0.09625553916469001,
+    "meteor": 0.10246009978516238,
+    "bertscore_f1": 0.0,
+    "avg_reference_length": 87.10087719298245,
+    "avg_candidate_length": 153.390350877193,
+    "length_ratio": 1.7610655118586034,
+    "length_difference": 66.28947368421053
+  },
+  "metrics_by_language": {
+    "english": {
+      "rouge_1_f1": 0.17333638640514218,
+      "n": 1596
+    }
+  },
+  "metrics_by_complexity": {
+    "professional": {
+      "rouge_1_f1": 0.19893296976697078,
+      "n": 540
+    },
+    "intermediate": {
+      "rouge_1_f1": 0.17371701841278067,
+      "n": 528
+    },
+    "layman": {
+      "rouge_1_f1": 0.14677743050472444,
+      "n": 528
+    }
+  },
+  "checkpoint": "models/qwen2.5_1.5b/checkpoints/exp4_hindi_code_mixed_to_english/final"
+}
