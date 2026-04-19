@@ -42,6 +42,14 @@ nohup.out
 # Model variants directories that may include weights/checkpoints
 models/gemma3_*/
 models/llama4_scout/
+models/qwen3_8b/
+
+# Local indexes/results for RAG experiments
+models/rag_legal_index/
+models/rag_legal_results/
+
+# Local LaTeX scratch
+models/mainn.tex
 
 # IDE
 .vscode/
