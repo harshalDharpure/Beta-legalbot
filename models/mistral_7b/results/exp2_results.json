@@ -15,7 +15,8 @@
     "avg_reference_length": 89.91528925619835,
     "avg_candidate_length": 161.52479338842974,
     "length_ratio": 1.796410763114961,
-    "length_difference": 71.6095041322314
+    "length_difference": 71.6095041322314,
+    "nli_score": 0.21995241446098243
   },
   "metrics_by_language": {
     "english": {

@@ -12,6 +12,7 @@ ENV/
 # Model checkpoints (too large for git)
 models/*/checkpoints/
 models/*/logs/
+models/exp4_exp5_logs/
 *.safetensors
 *.bin
 *.pt
@@ -24,6 +25,14 @@ models/*/logs/
 # Evaluation results (can be regenerated)
 models/evaluation_results/*.json
 models/evaluation_results/*.csv
+
+# Per-run generation metrics and partials (very large)
+models/*/results/*_partial_*.json
+models/*/results/*partial*.json
+
+# Local runs / downloads
+logs/
+nohup.out
 
 # IDE
 .vscode/

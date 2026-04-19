@@ -149,3 +149,67 @@ def calculate_response_length_stats(references: List[str], candidates: List[str]
         'length_ratio': avg_cand / avg_ref if avg_ref > 0 else 0,
         'length_difference': avg_cand - avg_ref
     }
+
+
+# ---------------------------------------------------------------------------
+# NLI (Natural Language Inference) score: entailment consistency
+# Reference = premise, Candidate = hypothesis; score = mean P(entailment).
+# ---------------------------------------------------------------------------
+NLI_AVAILABLE = False
+try:
+    import torch as _torch
+    from transformers import AutoModelForSequenceClassification, AutoTokenizer
+    _nli_model = None
+    _nli_tokenizer = None
+    _NLI_LABEL_ENTAILMENT = 2  # MNLI: 0=contradiction, 1=neutral, 2=entailment
+    NLI_AVAILABLE = True
+except ImportError:
+    pass
+
+
+def _get_nli_model():
+    """Lazy-load NLI model (DeBERTa MNLI)."""
+    global _nli_model, _nli_tokenizer
+    if _nli_model is None and NLI_AVAILABLE:
+        try:
+            _nli_tokenizer = AutoTokenizer.from_pretrained("microsoft/deberta-base-mnli")
+            _nli_model = AutoModelForSequenceClassification.from_pretrained("microsoft/deberta-base-mnli")
+            _nli_model.eval()
+            if _torch.cuda.is_available():
+                _nli_model = _nli_model.cuda()
+        except Exception as e:
+            print(f"⚠️ NLI model load failed: {e}")
+            return None, None
+    return _nli_model, _nli_tokenizer
+
+
+def calculate_nli_score(references: List[str], candidates: List[str], max_length: int = 256, batch_size: int = 8) -> Dict[str, float]:
+    """
+    Compute NLI score: for each (reference, candidate) as (premise, hypothesis),
+    get P(entailment) and return the mean. Higher = more semantically consistent.
+    Returns {'nli_score': float} or {'nli_score': 0.0} if NLI unavailable.
+    """
+    if not references or not candidates or len(references) != len(candidates):
+        return {'nli_score': 0.0}
+    model, tokenizer = _get_nli_model()
+    if model is None or tokenizer is None:
+        return {'nli_score': 0.0}
+    device = next(model.parameters()).device
+    entailment_probs = []
+    for i in range(0, len(references), batch_size):
+        batch_ref = references[i:i + batch_size]
+        batch_cand = candidates[i:i + batch_size]
+        # Truncate to avoid overflow (MNLI max length)
+        premises = [(" ".join(r.split()[:max_length])) for r in batch_ref]
+        hypotheses = [(" ".join(c.split()[:max_length])) for c in batch_cand]
+        try:
+            inputs = tokenizer(premises, hypotheses, padding=True, truncation=True, max_length=512, return_tensors="pt")
+            inputs = {k: v.to(device) for k, v in inputs.items()}
+            with _torch.no_grad():
+                logits = model(**inputs).logits
+            probs = _torch.softmax(logits, dim=1)
+            ent = probs[:, _NLI_LABEL_ENTAILMENT].cpu().tolist()
+            entailment_probs.extend(ent)
+        except Exception:
+            entailment_probs.extend([0.0] * len(premises))
+    return {'nli_score': float(sum(entailment_probs) / len(entailment_probs)) if entailment_probs else 0.0}

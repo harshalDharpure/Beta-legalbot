@@ -19,6 +19,12 @@ from peft import LoraConfig, get_peft_model, TaskType, PeftModel
 from datasets import Dataset
 from tqdm import tqdm
 
+try:
+    from transformers import BitsAndBytesConfig
+    BNB_AVAILABLE = True
+except ImportError:
+    BNB_AVAILABLE = False
+
 
 def load_config(config_path):
     """Load YAML config file."""
@@ -67,17 +73,23 @@ def prepare_dataset(data, tokenizer, max_length=512, max_target_length=256):
         # For generation, labels are the same as input_ids (shifted)
         encoding['labels'] = encoding['input_ids'].clone()
         
+        # Some models (e.g. Gemma 3) require token_type_ids when training.
+        # Use tokenizer's if present, else zeros (single-segment causal LM).
+        if 'token_type_ids' not in encoding:
+            encoding['token_type_ids'] = torch.zeros_like(encoding['input_ids'], dtype=torch.long)
+        
         dataset.append({
             'input_ids': encoding['input_ids'].squeeze().tolist(),
             'attention_mask': encoding['attention_mask'].squeeze().tolist(),
-            'labels': encoding['labels'].squeeze().tolist()
+            'labels': encoding['labels'].squeeze().tolist(),
+            'token_type_ids': encoding['token_type_ids'].squeeze().tolist()
         })
     
     return Dataset.from_list(dataset)
 
 
 def setup_model_and_tokenizer(config, use_qlora=False, gpu_ids=None):
-    """Setup model and tokenizer with optional QLoRA."""
+    """Setup model and tokenizer with optional QLoRA. Supports 4-bit loading for large models."""
     model_name = config['model']['model_name']
     tokenizer_name = config['model'].get('tokenizer_name', model_name)
     
@@ -89,18 +101,37 @@ def setup_model_and_tokenizer(config, use_qlora=False, gpu_ids=None):
         tokenizer.pad_token = tokenizer.eos_token
     
     print(f"Loading model: {model_name}")
-    # For multi-GPU, don't use device_map='auto' - let DataParallel handle it
-    device_map = None if use_qlora or (gpu_ids and len(gpu_ids) > 1) else 'auto'
-    
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        torch_dtype=torch.float16 if config['training'].get('fp16', True) else torch.float32,
-        device_map=device_map
-    )
-    
-    # Move to first GPU if not using device_map
-    if device_map is None:
-        model = model.to('cuda:0')
+    use_4bit = use_qlora and config['model'].get('quantization') == '4bit' and BNB_AVAILABLE
+    if use_qlora and config['model'].get('quantization') == '4bit' and not BNB_AVAILABLE:
+        print("WARNING: QLoRA 4-bit requested but bitsandbytes not available. Install with: pip install bitsandbytes")
+    device_map = None
+    if use_4bit:
+        # 4-bit QLoRA: use auto + max_memory; cap GPU so large models (e.g. Llama 4 Scout) offload rest to CPU
+        device_map = "auto"
+        max_memory = {0: "34GiB", "cpu": "60GiB"}
+        print("Loading model in 4-bit (QLoRA) on GPU (overflow to CPU if needed)...")
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.float16,
+            bnb_4bit_use_double_quant=True,
+            llm_int8_enable_fp32_cpu_offload=True,
+        )
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            quantization_config=bnb_config,
+            device_map=device_map,
+            max_memory=max_memory,
+        )
+    else:
+        # Full precision or LoRA without 4-bit
+        device_map = None if (gpu_ids and len(gpu_ids) > 1) else 'auto'
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            torch_dtype=torch.float16 if config['training'].get('fp16', True) else torch.float32,
+            device_map=device_map
+        )
+        if device_map is None:
+            model = model.to('cuda:0')
     
     # Setup QLoRA if needed
     if use_qlora:
@@ -163,7 +194,7 @@ def setup_model_and_tokenizer_from_exp2(model_name, config, use_qlora=False, gpu
     return model, tokenizer
 
 
-def train_model(model_name, experiment='exp1', gpu_ids=None, use_multi_gpu=True, config=None, few_size=None, direction=None):
+def train_model(model_name, experiment='exp1', gpu_ids=None, use_multi_gpu=True, config=None, few_size=None, direction=None, force_qlora=False):
     """Train a model for generation task with multi-GPU support."""
     # Save exp4 config name before we overwrite 'config' with YAML (Exp4 checkpoint dir needs this string)
     exp4_config_name = config if isinstance(config, str) else None
@@ -175,6 +206,12 @@ def train_model(model_name, experiment='exp1', gpu_ids=None, use_multi_gpu=True,
         return False
     
     config = load_config(config_path)
+    
+    # Force QLoRA (e.g. after OOM): override config to use 4-bit
+    if force_qlora:
+        config['model']['use_qlora'] = True
+        config['model']['quantization'] = '4bit'
+        print("Forcing QLoRA (4-bit) for this run to avoid OOM.")
     
     # Determine GPU IDs
     if gpu_ids is None:
@@ -289,11 +326,10 @@ def train_model(model_name, experiment='exp1', gpu_ids=None, use_multi_gpu=True,
             per_device_batch = 1
         print(f"Exp3/full FT: per_device_batch={per_device_batch}")
     
-    # Gradient checkpointing for Exp3 / full model to save memory
-    if experiment == 'exp3' or not use_qlora:
-        if hasattr(model, 'gradient_checkpointing_enable'):
-            model.gradient_checkpointing_enable()
-            print("Gradient checkpointing enabled")
+    # Gradient checkpointing to save memory (Exp3, full FT, and QLoRA)
+    if hasattr(model, 'gradient_checkpointing_enable'):
+        model.gradient_checkpointing_enable()
+        print("Gradient checkpointing enabled")
     
     # Disable FP16 for DataParallel (it has issues with FP16)
     use_fp16 = config['training'].get('fp16', True) and num_gpus == 1
@@ -363,9 +399,23 @@ def train_model(model_name, experiment='exp1', gpu_ids=None, use_multi_gpu=True,
         data_collator=data_collator,
     )
     
+    # Resume from latest checkpoint if present (so restarts don't lose progress)
+    resume_from_checkpoint = None
+    if os.path.isdir(output_dir):
+        checkpoints = [d for d in os.listdir(output_dir) if d.startswith('checkpoint-')]
+        if checkpoints:
+            try:
+                steps = [int(c.split('-')[1]) for c in checkpoints]
+                latest = os.path.join(output_dir, f'checkpoint-{max(steps)}')
+                if os.path.isdir(latest):
+                    resume_from_checkpoint = latest
+                    print(f"Resuming from {latest}")
+            except (ValueError, IndexError):
+                pass
+    
     # Train
     print("\n🚀 Starting training...")
-    trainer.train()
+    trainer.train(resume_from_checkpoint=resume_from_checkpoint)
     
     # Save final model
     final_dir = os.path.join(output_dir, 'final')
@@ -385,7 +435,8 @@ if __name__ == "__main__":
     parser.add_argument('--direction', type=str, default=None, help='Exp5: direction (e.g. hindi_code_mixed_to_english)')
     parser.add_argument('--gpu', type=int, nargs='+', default=None, help='GPU ID(s) - can specify multiple: --gpu 0 1 4')
     parser.add_argument('--multi-gpu', action='store_true', default=True, help='Use multiple GPUs if available')
+    parser.add_argument('--force-qlora', action='store_true', help='Force QLoRA (4-bit) to avoid OOM; overrides config')
     
     args = parser.parse_args()
     train_model(args.model, args.experiment, gpu_ids=args.gpu, use_multi_gpu=args.multi_gpu,
-                config=args.config, few_size=args.few_size, direction=args.direction)
+                config=args.config, few_size=args.few_size, direction=args.direction, force_qlora=args.force_qlora)

@@ -15,7 +15,36 @@
     "avg_reference_length": 89.91528925619835,
     "avg_candidate_length": 1.0,
     "length_ratio": 0.011121579080401664,
-    "length_difference": -88.91528925619835
+    "length_difference": -88.91528925619835,
+    "nli_score": 0.3185813390776854
+  },
+  "metrics_by_language": {
+    "english": {
+      "rouge_1_f1": 0.0,
+      "n": 331
+    },
+    "hindi": {
+      "rouge_1_f1": 0.0,
+      "n": 311
+    },
+    "code_mixed": {
+      "rouge_1_f1": 0.0,
+      "n": 326
+    }
+  },
+  "metrics_by_complexity": {
+    "professional": {
+      "rouge_1_f1": 0.0,
+      "n": 318
+    },
+    "intermediate": {
+      "rouge_1_f1": 0.0,
+      "n": 326
+    },
+    "layman": {
+      "rouge_1_f1": 0.0,
+      "n": 324
+    }
   },
   "checkpoint": "models/qwen2.5_1.5b/checkpoints/exp1/final"
 }

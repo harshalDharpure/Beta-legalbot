@@ -14,9 +14,16 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 from tqdm import tqdm
 
+try:
+    from transformers import BitsAndBytesConfig
+    BNB_AVAILABLE = True
+except Exception:
+    BitsAndBytesConfig = None
+    BNB_AVAILABLE = False
+
 # Add evaluation directory to path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from evaluation.metrics import calculate_batch_metrics, calculate_response_length_stats
+from evaluation.metrics import calculate_batch_metrics, calculate_response_length_stats, calculate_nli_score
 
 
 def load_config(config_path):
@@ -36,8 +43,8 @@ def load_jsonl(filepath):
     return data
 
 
-def format_prompt(input_text):
-    """Format prompt for generation."""
+def format_prompt(input_text, model_name=None):
+    """Format prompt for generation. Same as training: User/Assistant."""
     return f"User: {input_text}\nAssistant:"
 
 
@@ -45,51 +52,73 @@ def load_model_and_tokenizer(model_name, checkpoint_path, use_qlora=False):
     """Load model and tokenizer from checkpoint."""
     config_path = os.path.join('models', model_name, 'config.yaml')
     config = load_config(config_path)
-    
-    print(f"Loading tokenizer: {config['model']['tokenizer_name']}")
-    tokenizer = AutoTokenizer.from_pretrained(config['model']['tokenizer_name'])
+    base_name = config['model']['model_name']
+    tokenizer_name = config['model'].get('tokenizer_name', base_name)
+
+    # For Gemma 3: load tokenizer from checkpoint so it matches training; fallback to HF
+    if model_name.startswith("gemma3_") and os.path.exists(os.path.join(checkpoint_path, "tokenizer_config.json")):
+        print(f"Loading tokenizer from checkpoint: {checkpoint_path}")
+        tokenizer = AutoTokenizer.from_pretrained(checkpoint_path)
+    else:
+        print(f"Loading tokenizer: {tokenizer_name}")
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
-    
+
     print(f"Loading model from: {checkpoint_path}")
+    is_gemma3 = model_name.startswith("gemma3_")
     if use_qlora:
-        # Load base model
-        base_model = AutoModelForCausalLM.from_pretrained(
-            config['model']['model_name'],
-            torch_dtype=torch.float16,
-            device_map='auto'
-        )
-        # Load LoRA weights
+        # For Gemma 3: load base in 4-bit (like training) so behavior matches and generations are non-empty
+        use_4bit = is_gemma3 and BNB_AVAILABLE and config.get('model', {}).get('quantization') == '4bit'
+        if use_4bit:
+            bnb_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch.float16,
+                bnb_4bit_use_double_quant=True,
+            )
+            base_model = AutoModelForCausalLM.from_pretrained(
+                base_name,
+                quantization_config=bnb_config,
+                device_map='auto',
+            )
+        else:
+            base_model = AutoModelForCausalLM.from_pretrained(
+                base_name,
+                torch_dtype=torch.float16,
+                device_map='auto'
+            )
         model = PeftModel.from_pretrained(base_model, checkpoint_path)
-        model = model.merge_and_unload()  # Merge LoRA weights
+        model = model.merge_and_unload()
     else:
         model = AutoModelForCausalLM.from_pretrained(
             checkpoint_path,
             torch_dtype=torch.float16,
             device_map='auto'
         )
-    
     model.eval()
     return model, tokenizer
 
 
-def generate_response(model, tokenizer, input_text, max_new_tokens=256):
+def generate_response(model, tokenizer, input_text, max_new_tokens=256, model_name=None):
     """Generate response for given input."""
-    prompt = format_prompt(input_text)
-    
+    prompt = format_prompt(input_text, model_name=model_name)
+
     inputs = tokenizer(prompt, return_tensors='pt', truncation=True, max_length=512)
+    # Some models (e.g. Gemma 3 multimodal) do not accept token_type_ids in generate(); pass only input_ids and attention_mask
+    if 'token_type_ids' in inputs:
+        inputs.pop('token_type_ids')
     inputs = {k: v.to(model.device) for k, v in inputs.items()}
-    
+
     with torch.no_grad():
-        outputs = model.generate(
-            **inputs,
+        gen_kwargs = dict(
             max_new_tokens=max_new_tokens,
             do_sample=False,
-            temperature=0.7,
             pad_token_id=tokenizer.pad_token_id,
-            eos_token_id=tokenizer.eos_token_id
+            eos_token_id=tokenizer.eos_token_id,
+            min_new_tokens=1,
         )
-    
+        outputs = model.generate(**inputs, **gen_kwargs)
+
     # Decode only the generated part
     generated_text = tokenizer.decode(outputs[0][inputs['input_ids'].shape[1]:], skip_special_tokens=True)
     return generated_text.strip()
@@ -174,7 +203,7 @@ def evaluate_model(model_name, experiment='exp1', test_path=None, config=None, f
         input_text = entry.get('input', '')
         reference = entry.get('output', '')
         try:
-            candidate = generate_response(model, tokenizer, input_text)
+            candidate = generate_response(model, tokenizer, input_text, model_name=model_name)
         except Exception as e:
             print(f"\n[ERROR] Sample {idx + 1}/{len(test_data)}: {e}", flush=True)
             import traceback
@@ -197,8 +226,16 @@ def evaluate_model(model_name, experiment='exp1', test_path=None, config=None, f
     metrics = calculate_batch_metrics(references, candidates, lang='en')
     length_stats = calculate_response_length_stats(references, candidates)
     metrics.update(length_stats)
+    # NLI (entailment consistency): reference=premise, candidate=hypothesis
+    try:
+        nli = calculate_nli_score(references, candidates)
+        metrics.update(nli)
+        print(f"NLI score: {nli.get('nli_score', 0):.4f}")
+    except Exception as e:
+        print(f"⚠️ NLI skipped: {e}")
+        metrics['nli_score'] = None
 
-    # Metrics by language and complexity (for comparison tables)
+    # Metrics by language and complexity (full metrics for domain-wise tables)
     metrics_by_language = {}
     metrics_by_complexity = {}
     for lang in ['english', 'hindi', 'code_mixed']:
@@ -207,14 +244,30 @@ def evaluate_model(model_name, experiment='exp1', test_path=None, config=None, f
             ref_sub = [references[i] for i in indices]
             cand_sub = [candidates[i] for i in indices]
             m = calculate_batch_metrics(ref_sub, cand_sub, lang='en')
-            metrics_by_language[lang] = {'rouge_1_f1': m['rouge_1_f1'], 'n': len(indices)}
+            entry = {'rouge_1_f1': m['rouge_1_f1'], 'rouge_2_f1': m['rouge_2_f1'], 'rouge_l_f1': m['rouge_l_f1'],
+                     'bleu_1': m['bleu_1'], 'bleu_2': m['bleu_2'], 'bleu_3': m['bleu_3'], 'bleu_4': m['bleu_4'],
+                     'meteor': m['meteor'], 'n': len(indices)}
+            try:
+                nli_sub = calculate_nli_score(ref_sub, cand_sub)
+                entry['nli_score'] = nli_sub.get('nli_score') or 0.0
+            except Exception:
+                entry['nli_score'] = None
+            metrics_by_language[lang] = entry
     for comp in ['professional', 'intermediate', 'layman']:
         indices = [i for i, e in enumerate(test_data) if e.get('complexity') == comp]
         if indices:
             ref_sub = [references[i] for i in indices]
             cand_sub = [candidates[i] for i in indices]
             m = calculate_batch_metrics(ref_sub, cand_sub, lang='en')
-            metrics_by_complexity[comp] = {'rouge_1_f1': m['rouge_1_f1'], 'n': len(indices)}
+            entry = {'rouge_1_f1': m['rouge_1_f1'], 'rouge_2_f1': m['rouge_2_f1'], 'rouge_l_f1': m['rouge_l_f1'],
+                     'bleu_1': m['bleu_1'], 'bleu_2': m['bleu_2'], 'bleu_3': m['bleu_3'], 'bleu_4': m['bleu_4'],
+                     'meteor': m['meteor'], 'n': len(indices)}
+            try:
+                nli_sub = calculate_nli_score(ref_sub, cand_sub)
+                entry['nli_score'] = nli_sub.get('nli_score') or 0.0
+            except Exception:
+                entry['nli_score'] = None
+            metrics_by_complexity[comp] = entry
     
     # Print results
     print(f"\n{'='*70}")

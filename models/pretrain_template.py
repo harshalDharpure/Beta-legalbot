@@ -70,7 +70,9 @@ def prepare_pretraining_data(data_dir, tokenizer, max_length=512):
         if real_len < max_length:
             block = block + [pad_id] * (max_length - real_len)
         mask = [1] * real_len + [0] * (max_length - real_len)
-        blocks.append({'input_ids': block, 'attention_mask': mask})
+        # Gemma 3 and some models require token_type_ids during training
+        token_type_ids = [0] * max_length
+        blocks.append({'input_ids': block, 'attention_mask': mask, 'token_type_ids': token_type_ids})
     return Dataset.from_list(blocks)
 
 
@@ -161,8 +163,15 @@ def pretrain_model(model_name, experiment='exp2', gpu_ids=None, use_multi_gpu=Tr
     )
     print(f"Pretraining samples: {len(train_dataset)}")
     
-    # Data collator
-    data_collator = DataCollatorForLanguageModeling(
+    # Data collator: causal LM labels + preserve token_type_ids for Gemma 3
+    class CausalLMCollator(DataCollatorForLanguageModeling):
+        def __call__(self, features):
+            batch = super().__call__(features)
+            if features and 'token_type_ids' in features[0]:
+                batch['token_type_ids'] = torch.tensor([f['token_type_ids'] for f in features], dtype=torch.long)
+            return batch
+
+    data_collator = CausalLMCollator(
         tokenizer=tokenizer,
         mlm=False  # Causal LM, not masked LM
     )

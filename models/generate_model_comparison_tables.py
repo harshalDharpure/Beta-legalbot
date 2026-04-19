@@ -20,6 +20,9 @@ MODELS_ORDER = [
     'qwen2.5_7b',
     'qwen2.5_1.5b',
     'phi3_mini',
+    'gemma3_4b',
+    'gemma3_12b',
+    'qwen3_8b',
 ]
 
 MODEL_DISPLAY_NAMES = {
@@ -28,6 +31,9 @@ MODEL_DISPLAY_NAMES = {
     'qwen2.5_7b': 'Qwen2.5-7B',
     'qwen2.5_1.5b': 'Qwen2.5-1.5B',
     'phi3_mini': 'Phi-3-mini',
+    'gemma3_4b': 'Gemma-3-4B',
+    'gemma3_12b': 'Gemma-3-12B',
+    'qwen3_8b': 'Qwen3-8B',
 }
 
 

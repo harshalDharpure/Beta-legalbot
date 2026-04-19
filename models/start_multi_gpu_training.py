@@ -103,13 +103,11 @@ def main():
     print("Starting Multi-GPU Training")
     print("="*70)
     
-    # Models to train (prioritize QLoRA models - more memory efficient)
+    # New models only (original 5 already done; do not re-run)
     models = [
-        ('qwen2.5_1.5b', 2),      # Small model - 2 GPUs ✅ COMPLETE
-        ('qwen2.5_7b', 2),         # Medium model - 2 GPUs (with QLoRA - memory efficient)
-        ('mistral_7b', 2),         # Medium model - 2 GPUs (with QLoRA - memory efficient)
-        ('llama3.1_8b', 3),        # Large model - 3 GPUs (with QLoRA - memory efficient)
-        ('phi3_mini', 1),          # Small model - 1 GPU (skip for now - OOM issues)
+        ('gemma3_4b', 1),
+        ('gemma3_12b', 1),
+        ('qwen3_8b', 1),
     ]
     
     free_gpus = find_free_gpus()

@@ -1,18 +1,17 @@
 """
-Batch evaluation script for all Exp1 models.
-Evaluates all 5 generation models on Exp1 test set.
+Batch evaluation script for Exp1 models.
+Evaluates only the NEW models (original 5 already done).
 """
 
 import os
 import subprocess
 import sys
 
+# New models only; do not re-run experiments on original 5
 models = [
-    'llama3.1_8b',
-    'mistral_7b',
-    'qwen2.5_7b',
-    'qwen2.5_1.5b',
-    'phi3_mini'
+    'gemma3_4b',
+    'gemma3_12b',
+    'qwen3_8b',
 ]
 
 def evaluate_all():
