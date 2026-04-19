@@ -29,10 +29,19 @@ models/evaluation_results/*.csv
 # Per-run generation metrics and partials (very large)
 models/*/results/*_partial_*.json
 models/*/results/*partial*.json
+models/*/results/exp5_*.json
+models/*/results/exp4_*.json
+models/*/results/exp3_*.json
+models/*/results/exp2_*.json
+models/*/results/exp1_*.json
 
 # Local runs / downloads
 logs/
 nohup.out
+
+# Model variants directories that may include weights/checkpoints
+models/gemma3_*/
+models/llama4_scout/
 
 # IDE
 .vscode/
